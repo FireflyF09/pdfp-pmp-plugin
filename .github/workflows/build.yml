@@ -43,8 +43,9 @@ jobs:
         working-directory: plugin
         run: |
           cargo build --target wasm32-unknown-unknown --release
-          wasm-tools component new \
-            target/wasm32-unknown-unknown/release/pdfp_pmp_plugin.wasm \
+          WASM_FILE=$(ls target/wasm32-unknown-unknown/release/*.wasm | head -1)
+          echo "生成的 wasm: $WASM_FILE"
+          wasm-tools component new "$WASM_FILE" \
             -o target/wasm32-unknown-unknown/release/pdfp_pmp_plugin.component.wasm
 
       - name: Upload WASM artifact

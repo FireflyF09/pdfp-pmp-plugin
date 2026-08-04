@@ -87,8 +87,8 @@ jobs:
         working-directory: plugin
         run: |
           cargo build --target wasm32-unknown-unknown --release
-          wasm-tools component new \
-            target/wasm32-unknown-unknown/release/pdfp_pmp_plugin.wasm \
+          WASM_FILE=$(ls target/wasm32-unknown-unknown/release/*.wasm | head -1)
+          wasm-tools component new "$WASM_FILE" \
             -o target/wasm32-unknown-unknown/release/pdfp_pmp_plugin.component.wasm
           echo "构建完成: $(ls -lh target/wasm32-unknown-unknown/release/pdfp_pmp_plugin.component.wasm | awk '{print $5}')"
 
