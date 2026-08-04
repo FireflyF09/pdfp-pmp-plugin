@@ -87,10 +87,10 @@ jobs:
         working-directory: plugin
         run: |
           cargo build --target wasm32-unknown-unknown --release
-          WASM_FILE=$(ls target/wasm32-unknown-unknown/release/*.wasm | head -1)
+          WASM_FILE=$(ls ../target/wasm32-unknown-unknown/release/*.wasm | head -1)
           wasm-tools component new "$WASM_FILE" \
-            -o target/wasm32-unknown-unknown/release/pdfp_pmp_plugin.component.wasm
-          echo "构建完成: $(ls -lh target/wasm32-unknown-unknown/release/pdfp_pmp_plugin.component.wasm | awk '{print $5}')"
+            -o ../target/wasm32-unknown-unknown/release/pdfp_pmp_plugin.component.wasm
+          echo "构建完成: $(ls -lh ../target/wasm32-unknown-unknown/release/pdfp_pmp_plugin.component.wasm | awk '{print $5}')"
 
       - name: 创建 Release
         uses: softprops/action-gh-release@v2
@@ -107,5 +107,5 @@ jobs:
             ### WASM 下载
             `plugin.wasm` — 复制到 `plugins/pdfp-pmp-plugin.wasm` 使用
           files: |
-            plugin/target/wasm32-unknown-unknown/release/pdfp_pmp_plugin.component.wasm
+            target/wasm32-unknown-unknown/release/pdfp_pmp_plugin.component.wasm
           prerelease: false

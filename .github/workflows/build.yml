@@ -43,13 +43,13 @@ jobs:
         working-directory: plugin
         run: |
           cargo build --target wasm32-unknown-unknown --release
-          WASM_FILE=$(ls target/wasm32-unknown-unknown/release/*.wasm | head -1)
+          WASM_FILE=$(ls ../target/wasm32-unknown-unknown/release/*.wasm | head -1)
           echo "生成的 wasm: $WASM_FILE"
           wasm-tools component new "$WASM_FILE" \
-            -o target/wasm32-unknown-unknown/release/pdfp_pmp_plugin.component.wasm
+            -o ../target/wasm32-unknown-unknown/release/pdfp_pmp_plugin.component.wasm
 
       - name: Upload WASM artifact
         uses: actions/upload-artifact@v4
         with:
           name: pdfp-pmp-plugin.wasm
-          path: plugin/target/wasm32-unknown-unknown/release/pdfp_pmp_plugin.component.wasm
+          path: target/wasm32-unknown-unknown/release/pdfp_pmp_plugin.component.wasm
