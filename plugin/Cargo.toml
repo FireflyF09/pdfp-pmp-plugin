@@ -1,0 +1,18 @@
+[package]
+name = "pdfp-pmp-plugin"
+version = "0.1.0"
+edition = "2021"
+description = "PDFP Lite federation plugin for Phira-mp+"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+phira-plugin-sdk = { git = "https://github.com/HyperSynapseNetwork/Phira-mp-plus.git", branch = "main" }
+serde_json = "1.0"
+
+# WIT bindgen for guest (WASM component model)
+wit-bindgen = { version = "0.57", optional = true }
+
+[features]
+default = ["wit-bindgen"]

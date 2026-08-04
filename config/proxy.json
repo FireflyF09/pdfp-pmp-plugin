@@ -1,0 +1,7 @@
+{
+  "node_id": "pmp-south",
+  "role": "proxy",
+  "peers": [
+    { "address": "10.0.0.1:7900", "node_id": "pmp-north" }
+  ]
+}

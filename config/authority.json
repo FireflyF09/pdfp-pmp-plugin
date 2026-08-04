@@ -1,0 +1,9 @@
+{
+  "node_id": "pmp-north",
+  "role": "authority",
+  "listen": "0.0.0.0:7900",
+  "peers": [
+    { "address": "10.0.0.2:7900", "node_id": "pmp-south" },
+    { "address": "10.0.0.3:7900", "node_id": "pmp-west" }
+  ]
+}
