@@ -1,0 +1,54 @@
+name: Build WASM Plugin
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      attestations: write
+    steps:
+      - name: Checkout plugin repo
+        uses: actions/checkout@v4
+
+      - name: Checkout Phira-mp+ (for phira-plugin-sdk dependency)
+        uses: actions/checkout@v4
+        with:
+          repository: HyperSynapseNetwork/Phira-mp-plus
+          path: phira-mp-plus
+          sparse-checkout: |
+            phira-plugin-sdk
+            wit
+
+      - name: Setup symlinks for dependencies
+        run: |
+          rm -rf phira-plugin-sdk wit
+          ln -s $PWD/phira-mp-plus/phira-plugin-sdk $PWD/phira-plugin-sdk
+          ln -s $PWD/phira-mp-plus/wit $PWD/wit
+
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          target: wasm32-unknown-unknown
+
+      - name: Install wasm-tools
+        run: cargo install wasm-tools
+
+      - name: Build WASM plugin
+        working-directory: plugin
+        run: |
+          cargo build --target wasm32-unknown-unknown --release
+          wasm-tools component new \
+            target/wasm32-unknown-unknown/release/pdfp_pmp_plugin.wasm \
+            -o target/wasm32-unknown-unknown/release/pdfp_pmp_plugin.component.wasm
+
+      - name: Upload WASM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pdfp-pmp-plugin.wasm
+          path: plugin/target/wasm32-unknown-unknown/release/pdfp_pmp_plugin.component.wasm

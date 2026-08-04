@@ -1,0 +1,111 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 版本号（如 0.2.0，留空自动计算）
+        type: string
+        default: ""
+      description:
+        description: 版本说明（可选）
+        type: string
+        default: ""
+
+env:
+  CARGO_TERM_COLOR: always
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 确定版本号
+        id: version
+        run: |
+          if [[ -n "${{ github.event.inputs.version }}" ]]; then
+            echo "tag=v${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            LATEST_TAG=$(git tag --list 'v*.*.*' --sort=-v:refname | head -1)
+            if [[ -z "$LATEST_TAG" ]]; then
+              echo "tag=v0.1.0" >> $GITHUB_OUTPUT
+              echo "version=0.1.0" >> $GITHUB_OUTPUT
+            else
+              RAW_VERSION="${LATEST_TAG#v}"
+              MAJOR=$(echo "$RAW_VERSION" | cut -d. -f1)
+              MINOR=$(echo "$RAW_VERSION" | cut -d. -f2)
+              BASE_TAG="v${MAJOR}.${MINOR}.0"
+              if git rev-parse "$BASE_TAG" >/dev/null 2>&1; then
+                PATCH=$(git rev-list --count "$BASE_TAG"..HEAD)
+              else
+                PATCH=$(git rev-list --count HEAD)
+              fi
+              FULL_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+              # 校验版本号格式，拒绝 vmain.main.main 之类
+              if [[ ! "$FULL_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+                echo "tag=v0.1.0" >> $GITHUB_OUTPUT
+                echo "version=0.1.0" >> $GITHUB_OUTPUT
+              else
+                echo "tag=v$FULL_VERSION" >> $GITHUB_OUTPUT
+                echo "version=$FULL_VERSION" >> $GITHUB_OUTPUT
+              fi
+            fi
+          fi
+
+      - name: Checkout Phira-mp+（获取 phira-plugin-sdk 依赖）
+        uses: actions/checkout@v4
+        with:
+          repository: HyperSynapseNetwork/Phira-mp-plus
+          path: phira-mp-plus
+          sparse-checkout: |
+            phira-plugin-sdk
+            wit
+
+      - name: Setup symlinks for dependencies
+        run: |
+          rm -rf phira-plugin-sdk wit
+          ln -s $PWD/phira-mp-plus/phira-plugin-sdk $PWD/phira-plugin-sdk
+          ln -s $PWD/phira-mp-plus/wit $PWD/wit
+
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          target: wasm32-unknown-unknown
+
+      - name: Install wasm-tools
+        run: cargo install wasm-tools
+
+      - name: 构建 WASM 插件
+        working-directory: plugin
+        run: |
+          cargo build --target wasm32-unknown-unknown --release
+          wasm-tools component new \
+            target/wasm32-unknown-unknown/release/pdfp_pmp_plugin.wasm \
+            -o target/wasm32-unknown-unknown/release/pdfp_pmp_plugin.component.wasm
+          echo "构建完成: $(ls -lh target/wasm32-unknown-unknown/release/pdfp_pmp_plugin.component.wasm | awk '{print $5}')"
+
+      - name: 创建 Release
+        uses: softprops/action-gh-release@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: v${{ steps.version.outputs.version }}
+          body: |
+            ## PDFP PMP Plugin v${{ steps.version.outputs.version }}
+
+            ${{ github.event.inputs.description && '### 说明' || '' }}
+            ${{ github.event.inputs.description }}
+
+            ### WASM 下载
+            `plugin.wasm` — 复制到 `plugins/pdfp-pmp-plugin.wasm` 使用
+          files: |
+            plugin/target/wasm32-unknown-unknown/release/pdfp_pmp_plugin.component.wasm
+          prerelease: false
